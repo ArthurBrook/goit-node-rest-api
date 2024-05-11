@@ -4,13 +4,20 @@ import gravatar from 'gravatar';
 import Jimp from 'jimp';
 import path from 'path';
 import fs from 'fs/promises';
+<<<<<<< HEAD
 import { nanoid } from 'nanoid';
 import { controllerDecorator } from "../helpers/controllerDecorator.js";
 import sendEmail from "../helpers/sendEmail.js";
 import { findUser, registerUser, updateUser } from "../services/authServices.js";
+=======
+import { controllerDecorator } from "../helpers/controllerDecorator.js";
+import { findUser, setToken, registerUser, modifySubscription, modifyAvatar } from "../services/authServices.js";
+>>>>>>> 9fec51614834f496cae6b48523cbebfe296f5b4f
 import HttpError from "../helpers/HttpError.js";
 
 const { JWT_SECRET, BASE_URL } = process.env;
+
+const avatarsDir = path.resolve('public', 'avatars');
 
 const avatarsDir = path.resolve('public', 'avatars');
 
@@ -26,6 +33,7 @@ export const register = controllerDecorator(async (req, res) => {
 
     const avatarURL = gravatar.url(email);
 
+<<<<<<< HEAD
     const verificationToken = nanoid();
 
     const result = await registerUser({ ...req.body, password: hashPassword, avatarURL, verificationToken });
@@ -37,6 +45,9 @@ export const register = controllerDecorator(async (req, res) => {
     }
 
     await sendEmail(verifyEmail);
+=======
+    const result = await registerUser({...req.body, password: hashPassword, avatarURL});
+>>>>>>> 9fec51614834f496cae6b48523cbebfe296f5b4f
 
     res.status(201).json({
         user: {
@@ -147,7 +158,11 @@ export const updateAvatar = controllerDecorator(async (req, res) => {
     })
     await fs.rename(tempUpload, resultUpload);
     const avatarURL = path.join('avatars', newFileName);
+<<<<<<< HEAD
     await updateUser({ _id }, { avatarURL });
+=======
+    const result = await modifyAvatar(_id, { avatarURL });
+>>>>>>> 9fec51614834f496cae6b48523cbebfe296f5b4f
     
     res.json({ avatarURL });
 })
