@@ -4,11 +4,20 @@ import gravatar from 'gravatar';
 import Jimp from 'jimp';
 import path from 'path';
 import fs from 'fs/promises';
+<<<<<<< HEAD
+import { nanoid } from 'nanoid';
+import { controllerDecorator } from "../helpers/controllerDecorator.js";
+import sendEmail from "../helpers/sendEmail.js";
+import { findUser, registerUser, updateUser } from "../services/authServices.js";
+=======
 import { controllerDecorator } from "../helpers/controllerDecorator.js";
 import { findUser, setToken, registerUser, modifySubscription, modifyAvatar } from "../services/authServices.js";
+>>>>>>> 9fec51614834f496cae6b48523cbebfe296f5b4f
 import HttpError from "../helpers/HttpError.js";
 
-const { JWT_SECRET } = process.env;
+const { JWT_SECRET, BASE_URL } = process.env;
+
+const avatarsDir = path.resolve('public', 'avatars');
 
 const avatarsDir = path.resolve('public', 'avatars');
 
@@ -24,7 +33,21 @@ export const register = controllerDecorator(async (req, res) => {
 
     const avatarURL = gravatar.url(email);
 
+<<<<<<< HEAD
+    const verificationToken = nanoid();
+
+    const result = await registerUser({ ...req.body, password: hashPassword, avatarURL, verificationToken });
+    
+    const verifyEmail = {
+        to: email,
+        subject: "Verify email",
+        html: `<a target="_blank" href="${BASE_URL}/api/users/verify/${verificationToken}">Click to verify email</a>`
+    }
+
+    await sendEmail(verifyEmail);
+=======
     const result = await registerUser({...req.body, password: hashPassword, avatarURL});
+>>>>>>> 9fec51614834f496cae6b48523cbebfe296f5b4f
 
     res.status(201).json({
         user: {
@@ -35,11 +58,56 @@ export const register = controllerDecorator(async (req, res) => {
     });
 })
 
+export const verify = controllerDecorator(async (req, res) => {
+    const { verificationToken } = req.params;
+
+    const user = await findUser({ verificationToken });
+    
+    if (!user) {
+        throw HttpError(404, "User not found");
+    }
+
+    await updateUser({ _id: user._id }, { verify: true, verificationToken: null });
+
+    res.json({
+        message: "Verification successful"
+    })
+})
+
+export const resendVerify = controllerDecorator(async (req, res) => {
+    const { email } = req.body;
+    const user = await findUser({ email });
+
+    if (!user) {
+        throw HttpError(404, "User not found");
+    }
+
+    if (user.verify) {
+        throw HttpError(400, "Verification has already been passed");
+    }
+
+    const verifyEmail = {
+        to: email,
+        subject: "Verify email",
+        html: `<a target="_blank" href="${BASE_URL}/api/users/verify/${user.verificationToken}">Click to verify email</a>`
+    }
+
+    await sendEmail(verifyEmail);
+
+    res.json({
+        message: "Verification email sent"
+    })
+})
+
 export const login = controllerDecorator(async (req, res) => {
     const { email, password } = req.body;
     const user = await findUser({ email });
     if (!user) {
         throw HttpError(401, "Email or password is wrong");
+    }
+
+    if (!user.verify) {
+        throw HttpError(401, "Please, verify your email");
     }
 
     const passwordCompare = await bcrypt.compare(password, user.password);
@@ -50,7 +118,7 @@ export const login = controllerDecorator(async (req, res) => {
     const payload = { id: user._id };
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "23h" });
-    await setToken(user._id, { token });
+    await updateUser({ _id: user._id }, { token });
 
     res.json({
         token,
@@ -70,7 +138,7 @@ export const updateSubscription = controllerDecorator(async (req, res) => {
         throw HttpError(404, "User not found");
     }
 
-    const result = await modifySubscription({ email }, { subscription });
+    const result = await updateUser({ email }, { subscription });
 
     res.json(result);
 })
@@ -90,7 +158,11 @@ export const updateAvatar = controllerDecorator(async (req, res) => {
     })
     await fs.rename(tempUpload, resultUpload);
     const avatarURL = path.join('avatars', newFileName);
+<<<<<<< HEAD
+    await updateUser({ _id }, { avatarURL });
+=======
     const result = await modifyAvatar(_id, { avatarURL });
+>>>>>>> 9fec51614834f496cae6b48523cbebfe296f5b4f
     
     res.json({ avatarURL });
 })
@@ -106,7 +178,7 @@ export const getCurrentUser = controllerDecorator(async (req, res) => {
 
 export const logout = controllerDecorator(async (req, res) => {
     const { _id } = req.user;
-    await setToken(_id, { token: null });
+    await updateUser({ _id }, { token: null });
     
     res.status(204);
 })
