@@ -18,9 +18,17 @@ const usersSchema = new Schema(
             enum: subscriptionTypes,
             default: "starter",
         },
+        avatarURL: String,
         token: {
             type: String,
             default: null,
+        },
+        verify: {
+            type: Boolean,
+            default: false,
+        },
+        verificationToken: {
+            type: String,
         },
     },
     { versionKey: false }
